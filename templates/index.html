@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Summarizer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .gradient-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .textarea-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .word-count {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .button-pulse:hover {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">Smart Summarizer</h1>
+                <p class="text-xl text-white opacity-90">Transform lengthy text into concise summaries instantly</p>
+            </div>
+
+            <!-- Main Content -->
+            <div class="glass rounded-xl p-8 shadow-2xl">
+                <!-- Input Section -->
+                <div class="mb-8">
+                    <label class="block text-white text-lg mb-4">Input Text</label>
+                    <div class="textarea-container">
+                        <textarea 
+                            id="inputText" 
+                            class="w-full h-64 p-4 rounded-lg bg-white bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-200"
+                            placeholder="Paste your text here..."
+                        ></textarea>
+                        <div class="word-count" id="wordCount">0 words</div>
+                    </div>
+                </div>
+
+                <!-- Button -->
+                <div class="text-center mb-8">
+                    <button 
+                        onclick="summarize()" 
+                        class="button-pulse bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-full text-lg font-semibold hover:opacity-90 transition duration-200 transform hover:scale-105"
+                        id="summarizeBtn"
+                    >
+                        Summarize Text
+                    </button>
+                </div>
+
+                <!-- Result Section -->
+                <div class="result-section hidden" id="resultSection">
+                    <label class="block text-white text-lg mb-4">Summary</label>
+                    <div class="bg-white bg-opacity-90 p-6 rounded-lg">
+                        <p id="result" class="text-gray-800"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Word count functionality
+        const inputText = document.getElementById('inputText');
+        const wordCount = document.getElementById('wordCount');
+        const resultSection = document.getElementById('resultSection');
+        const summarizeBtn = document.getElementById('summarizeBtn');
+
+        inputText.addEventListener('input', () => {
+            const words = inputText.value.trim().split(/\s+/).filter(word => word.length > 0);
+            wordCount.textContent = `${words.length} words`;
+        });
+
+        async function summarize() {
+            const text = inputText.value;
+            if (!text.trim()) {
+                alert('Please enter some text to summarize');
+                return;
+            }
+
+            // Show loading state
+            summarizeBtn.disabled = true;
+            summarizeBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+            `;
+
+            try {
+                const response = await fetch("/summarize", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+                
+                // Show result section
+                resultSection.classList.remove('hidden');
+                document.getElementById("result").innerText = data.summary;
+
+                // Smooth scroll to result
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                alert('An error occurred while summarizing the text. Please try again.');
+            } finally {
+                // Reset button state
+                summarizeBtn.disabled = false;
+                summarizeBtn.innerHTML = 'Summarize Text';
+            }
+        }
+    </script>
+</body>
+</html>
